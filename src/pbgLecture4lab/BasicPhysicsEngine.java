@@ -61,7 +61,9 @@ public class BasicPhysicsEngine {
 	public static boolean canGoSlack=false;
         public static boolean connected = false;
         public static boolean leavedBarrier = false;
-        public AnchoredBarrier_StraightLine startBarrier;
+        public static boolean spaceShipStarted = false;
+        public AnchoredBarrier_StraightLine startBarrierBall;
+        public AnchoredBarrier_StraightLine winningBarrier;
 	
 	public List<BasicParticle> particles;
 	public List<AnchoredBarrier> barriers;
@@ -78,8 +80,8 @@ public class BasicPhysicsEngine {
 		// pinball:
 		double r=.1;
 		
-		particles.add(new ControllableSpaceShip(1,WORLD_HEIGHT/2,0,0, r, true, 10000));
-		particles.add(new BasicParticle(9,WORLD_HEIGHT/6 * 2.1,0,0, r,true, Color.BLUE, 2*4, rollingFriction));
+		particles.add(new ControllableSpaceShip(1,WORLD_HEIGHT/10 * 8.1,0,0, r, true, 10000));
+		particles.add(new BasicParticle(9,WORLD_HEIGHT/48 * 1.4,0,0, r,true, Color.BLUE, 2*4, rollingFriction));
 		//connectors.add(new ElasticConnector(particles.get(0), particles.get(1), 1, springConstant, springDampingConstant, false, Color.WHITE, hookesLawTruncation));
 
 		
@@ -158,11 +160,19 @@ public class BasicPhysicsEngine {
 				break;
 			}
                         case THRUST_ARENA: {
-                                startBarrier = new AnchoredBarrier_StraightLine(0, WORLD_HEIGHT / 6 * 2, WORLD_WIDTH, WORLD_HEIGHT / 6 * 2, Color.WHITE);
-                                barriers.add(startBarrier);
-				barriers.add(new AnchoredBarrier_StraightLine(WORLD_WIDTH, 0, WORLD_WIDTH, WORLD_HEIGHT, Color.WHITE));
-				barriers.add(new AnchoredBarrier_StraightLine(WORLD_WIDTH, WORLD_HEIGHT / 6 * 5, 0, WORLD_HEIGHT / 6 * 5, Color.WHITE));
-				barriers.add(new AnchoredBarrier_StraightLine(0, WORLD_HEIGHT, 0, 0, Color.WHITE));
+                                startBarrierBall = new AnchoredBarrier_StraightLine(WORLD_WIDTH / 8, WORLD_HEIGHT / 48, WORLD_WIDTH, WORLD_HEIGHT / 48, Color.WHITE, 0.1);
+                                barriers.add(startBarrierBall);
+				barriers.add(new AnchoredBarrier_StraightLine(WORLD_WIDTH, WORLD_HEIGHT / 48, WORLD_WIDTH, WORLD_HEIGHT / 4, Color.WHITE, 0.1));
+				barriers.add(new AnchoredBarrier_StraightLine(WORLD_WIDTH, WORLD_HEIGHT / 4, WORLD_WIDTH / 3, WORLD_HEIGHT / 4, Color.WHITE, 0.1));
+                                barriers.add(new AnchoredBarrier_StraightLine(WORLD_WIDTH / 3, WORLD_HEIGHT / 4, WORLD_WIDTH / 3, WORLD_HEIGHT / 4, Color.WHITE, 0.1));
+                                barriers.add(new AnchoredBarrier_StraightLine(WORLD_WIDTH, WORLD_HEIGHT / 4, WORLD_WIDTH, WORLD_HEIGHT, Color.WHITE, 0.1));
+                                winningBarrier = new AnchoredBarrier_StraightLine(WORLD_WIDTH, WORLD_HEIGHT, 0, WORLD_HEIGHT, Color.WHITE, 0.1);
+                                barriers.add(winningBarrier);
+				barriers.add(new AnchoredBarrier_StraightLine(0, WORLD_HEIGHT, 0, WORLD_HEIGHT / 5 * 4, Color.WHITE, 0.1));
+                                barriers.add(new AnchoredBarrier_StraightLine(0, WORLD_HEIGHT / 5 * 4, WORLD_WIDTH / 3 * 2, WORLD_HEIGHT / 5 * 4, Color.WHITE, 0.1));
+                                barriers.add(new AnchoredBarrier_StraightLine(WORLD_WIDTH / 3 * 2, WORLD_HEIGHT / 5 * 4, WORLD_WIDTH / 3 * 2, WORLD_HEIGHT / 32 * 15, Color.WHITE, 0.1));
+                                barriers.add(new AnchoredBarrier_StraightLine(WORLD_WIDTH / 3 * 2, WORLD_HEIGHT / 32 * 15, WORLD_WIDTH / 8, WORLD_HEIGHT / 32 * 15, Color.WHITE, 0.1));
+                                barriers.add(new AnchoredBarrier_StraightLine(WORLD_WIDTH / 8, WORLD_HEIGHT / 32 * 15, WORLD_WIDTH / 8, WORLD_HEIGHT / 48, Color.WHITE, 0.1));
                         }
 		}
 			
@@ -192,7 +202,7 @@ public class BasicPhysicsEngine {
 	public static void main(String[] args) throws Exception {
 		final BasicPhysicsEngine game = new BasicPhysicsEngine();
 		final BasicView view = new BasicView(game);
-		JEasyFrame frame = new JEasyFrame(view, "Basic Physics Engine");
+		JEasyFrame frame = new JEasyFrame(view, "Thrust Game");
 		frame.addKeyListener(new BasicKeyListener());
 		view.addMouseMotionListener(new BasicMouseListener());
 		game.startThread(view);
@@ -229,7 +239,9 @@ public class BasicPhysicsEngine {
 				if (b.isCircleCollidingBarrier(particle.getPos(), particle.getRadius())) {
 					Vector2D bouncedVel=b.calculateVelocityAfterACollision(particle.getPos(), particle.getVel());
 					particle.setVel(bouncedVel);
-                                        if ((connected && leavedBarrier) || particle == particles.get(0)) {
+                                        if (b == winningBarrier && connected) {
+                                            System.exit(2);
+                                        } else if ((connected && leavedBarrier) || particle == particles.get(0) && spaceShipStarted) {
                                             System.exit(1);
                                         }
 				}
@@ -251,9 +263,12 @@ public class BasicPhysicsEngine {
                     System.out.println(particles.get(0).getPos().dist(particles.get(1).getPos()));
                 }
                 if (!leavedBarrier) {
-                    if (!startBarrier.isCircleCollidingBarrier(particles.get(1).getPos(), particles.get(1).getRadius()) && connected) {
+                    if (!startBarrierBall.isCircleCollidingBarrier(particles.get(1).getPos(), particles.get(1).getRadius()) && connected) {
                         leavedBarrier = true;
                     }
+                }
+                if (!spaceShipStarted && BasicKeyListener.isThrustKeyPressed()) {
+                    spaceShipStarted = true;
                 }
 			
 	}
